@@ -7,6 +7,7 @@ import time
 import numpy as np
 from ui_components import display_employee_info, display_result_card
 from core_logic import image_to_feature, search_similar_faces, get_employee_avatar, crop_center_square
+import config
 
 # Initialize Session State
 if 'checkin_status' not in st.session_state:
@@ -42,7 +43,8 @@ if 'matching_avatar' not in st.session_state:
     st.session_state.matching_avatar = None
 
 # Main Layout
-col1, col2 = st.columns([3, 2])
+st.markdown("<h1 style='text-align: center;'>🧑‍💼 Face-Based Employee Check-in System</h1>", unsafe_allow_html=True)
+col1, col2 = st.columns([3, 2], gap="large")
 
 with col1:
     # Employee List Section
@@ -150,8 +152,6 @@ with col2:
                     st.session_state.capture_clicked = False
                     st.rerun()
 
-                
-    
     # Show captured image if available
     if st.session_state.captured_image is not None:
         st.markdown("---")
@@ -177,4 +177,4 @@ with col2:
                     display_result_card(name, similarity, avatar, border_color)
 
         elif st.session_state.matching_result is None:
-            st.error("No matches found above the confidence threshold.")
+            st.error("No matches found.") # No matches found above the confidence threshold

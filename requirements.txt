@@ -1,0 +1,9 @@
+streamlit
+Pillow
+opencv-python
+numpy
+faiss-cpu
+torch
+torchvision
+facenet-pytorch
+tqdm
