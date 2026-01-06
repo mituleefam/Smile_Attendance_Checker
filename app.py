@@ -78,14 +78,20 @@ with col2:
     st.markdown("### 📸 Employee Check-in")
     
     # Camera capture button
-    if st.button("Open Camera for Check-in", use_container_width=True, type="primary"):
-        st.session_state.capture_clicked = True
+    if not st.session_state.get('capture_clicked', False):
+        if st.button("Open Camera for Check-in", use_container_width=True, type="primary"):
+            st.session_state.capture_clicked = True
+            st.rerun()
+    else:
+        if st.button("❌ Cancel Check-in", use_container_width=True):
+            st.session_state.capture_clicked = False
+            st.rerun()
     
     if st.session_state.get('capture_clicked', False):
         st.info("Checking in...")
         st.session_state.captured_image = None
         camera_placeholder = st.empty()
-        countdown_placeholder = st.empty()
+        note_placeholder = st.empty()
 
         cap = cv2.VideoCapture(0)
         captured_frame = None
@@ -98,32 +104,45 @@ with col2:
                 captured_image = crop_center_square(captured_image)
                 st.session_state.captured_image = captured_image
         else:
-            start_time = time.time()
-            capture_delay = 3  # 3-second countdown
-
-            while (time.time() - start_time) < capture_delay:
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            smile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_smile.xml')
+            note_placeholder.markdown(
+                    "<h3 style='text-align:center;color:#4CAF50;'>😊 Smile to capture</h3>", 
+                    unsafe_allow_html=True
+                )
+            
+            captured_frame = None
+            while True:
                 ret, frame = cap.read()
                 if not ret:
                     st.error("Failed to capture frame")
                     break
 
-                remaining = int(capture_delay - (time.time() - start_time)) + 1
-                countdown_placeholder.markdown(
-                    f"<h2 style='text-align:center;color:#ff5722;'>{remaining}</h2>",
-                    unsafe_allow_html=True
-                )
-
+                # Process image
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                camera_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+                faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+                is_smiling = False
+                for (x, y, w, h) in faces:
+                    roi_gray = gray[y:y+h, x:x+w]
+                    smiles = smile_cascade.detectMultiScale(roi_gray, scaleFactor=1.8, minNeighbors=10)
+                    if len(smiles) > 0:
+                        is_smiling = True
+                        cv2.putText(frame_rgb, "Smile!", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                        cv2.rectangle(frame_rgb, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                        break # Only need one smiling face
 
-                if (time.time() - start_time) >= (capture_delay - 0.1):
+                # Update image display
+                camera_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+                if is_smiling:
                     captured_frame = frame_rgb
+                    break
 
                 time.sleep(0.05)
 
             cap.release()
             camera_placeholder.empty()
-            countdown_placeholder.empty()
+            note_placeholder.empty()
 
             if captured_frame is not None:
                 captured_image = Image.fromarray(captured_frame)
@@ -162,8 +181,7 @@ with col2:
         if st.session_state.matching_result:
             st.success(f"""
             ✅ **{st.session_state.matching_result}** checked in!
-            Similarity: {st.session_state.matching_distance:.4f}
-            """)
+            """) # Similarity: {st.session_state.matching_distance:.4f}
             
             # Show top matches
             st.markdown("### 🏆 Top Matches")

@@ -29,7 +29,6 @@ def display_result_card(name, similarity, avatar, border_color):
             <img src="data:image/png;base64,{img_b64}" style="width:100%; border-radius:6px;" />
             <div style="margin-top:5px;">
                 <strong>{name}</strong><br>
-                <small>Similarity: {similarity:.4f}</small>
             </div>
         </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True) # <small>Similarity: {similarity:.4f}</small>
